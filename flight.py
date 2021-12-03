@@ -15,7 +15,8 @@ logging.basicConfig(level=logging.INFO)
 # Specify the uri of the drone to which we want to connect (if your radio
 # channel is X, the uri should be 'radio://0/X/2M/E7E7E7E7E7')
 uri = 'radio://0/35/2M/E7E7E7E7E7'
-IP_OF_BRAIN = ''  # TODO enter ip of brain
+BRAIN_IP = ''  # TODO enter ip of brain
+BRAIN_PORT = '8080'
 DRONE_ID = '0'
 
 # Specify the variables we want to log (all at 100 Hz)
@@ -156,7 +157,7 @@ class SimpleClient:
             payload = drone_data.string_dict()
             payload['drone_id'] = DRONE_ID
             try:
-                response = requests.get(f'http://{IP_OF_BRAIN}:8080/drone_data', params=payload)
+                response = requests.get(f'http://{BRAIN_IP}:{BRAIN_PORT}/drone_data', params=payload)
                 if response.status_code != 200:
                     print(f'Error code sending request {response.status_code}')
                 else:
@@ -255,11 +256,11 @@ def end():
 
 
 if __name__ == '__main__':
-    if IP_OF_BRAIN == '':
+    if BRAIN_IP == '':
         logging.critical('IP_OF_BRAIN not set')
     else:
         logging.info(f'Starting Client for drone with ID={DRONE_ID}')
-        logging.info(f'Using IP_OF_BRAIN={IP_OF_BRAIN}')
+        logging.info(f'Using BRAIN_IP={BRAIN_IP} port {BRAIN_PORT}')
 
         # Initialize everything
         # logging.basicConfig(level=logging.ERROR)
