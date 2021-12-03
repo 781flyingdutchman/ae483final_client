@@ -16,6 +16,7 @@ logging.basicConfig(level=logging.INFO)
 # channel is X, the uri should be 'radio://0/X/2M/E7E7E7E7E7')
 uri = 'radio://0/35/2M/E7E7E7E7E7'
 IP_OF_BRAIN = ''  # TODO enter ip of brain
+DRONE_ID = '0'
 
 # Specify the variables we want to log (all at 100 Hz)
 variables = [
@@ -62,7 +63,7 @@ variables = [
 ]
 
 drone_data = DroneData()
-send_to_drone = True
+send_to_drone = True  # as long as this is true, the client will send position set point updates to the drone
 
 class SimpleClient:
     def __init__(self, uri, use_controller=False, use_observer=False):
@@ -153,7 +154,7 @@ class SimpleClient:
         if modified:
             # send to drone only if any of the drone x, y, z data has changed
             payload = drone_data.string_dict()
-            payload['drone_id'] = '0'  # TODO change drone id
+            payload['drone_id'] = DRONE_ID
             try:
                 response = requests.get(f'http://{IP_OF_BRAIN}:8080/drone_data', params=payload)
                 if response.status_code != 200:
@@ -161,8 +162,8 @@ class SimpleClient:
                 else:
                     print(f'url: {response.url}')
                     print(f'response: {response.content}')
-            except requests.exceptions.RequestException:
-                logging.info('catch error while receiving')
+            except requests.exceptions.RequestException as err:
+                logging.warning(f'Error sending request to Brain: {err}')
 
     def log_error(self, logconf, msg):
         logging.error(f'Error when logging {logconf}: {msg}')
@@ -209,13 +210,15 @@ class SimpleClient:
 
 
 def send_target_to_drone(client):
-    logging.info('sending target to drone')
+    logging.info('send_target_to_drone thread running')
     while send_to_drone:
+        logging.debug(f'Sending position set point {(drone_data.target_x, drone_data.target_y, drone_data.target_z)}')
         client.cf.commander.send_position_setpoint(drone_data.target_x, drone_data.target_y, drone_data.target_z, 0)
-        time.sleep(0.1)
+        time.sleep(0.5)
     client.move(0, 0, 0.5, 0, 5)
     client.stop(5)
     client.disconnect()
+    logging.info('send_target_to_drone thread ending')
 
 
 # Web server listening to brain
@@ -252,21 +255,25 @@ def end():
 
 
 if __name__ == '__main__':
-    logging.info('main')
-    # Initialize everything
-    # logging.basicConfig(level=logging.ERROR)
-    cflib.crtp.init_drivers()
+    if IP_OF_BRAIN == '':
+        logging.critical('IP_OF_BRAIN not set')
+    else:
+        logging.info(f'Starting Client for drone with ID={DRONE_ID}')
+        logging.info(f'Using IP_OF_BRAIN={IP_OF_BRAIN}')
 
-    #  Create and start the Client that will connect to the drone
-    client = SimpleClient(uri, use_controller=True, use_observer=True)
-    while not client.is_connected:
-        print(f' ... connecting ...')
-        time.sleep(1.0)
-    send_target_to_drone(client)
+        # Initialize everything
+        # logging.basicConfig(level=logging.ERROR)
+        cflib.crtp.init_drivers()
 
-    logging.info('Starting send_target_to_drone thread')
-    thread = threading.Thread(target=send_target_to_drone, args=(client,))
-    thread.start()
+        #  Create and start the Client that will connect to the drone
+        client = SimpleClient(uri, use_controller=True, use_observer=True)
+        while not client.is_connected:
+            logging.debug(f' ... connecting ...')
+            time.sleep(1.0)
 
-    logging.info('Starting web server')
-    app.run(host='0.0.0.0', port=8080, debug=True)
+        logging.info('Starting send_target_to_drone thread')
+        thread = threading.Thread(target=send_target_to_drone, args=(client,))
+        thread.start()
+
+        logging.info('Starting web server')
+        app.run(host='0.0.0.0', port=8080, debug=True)
