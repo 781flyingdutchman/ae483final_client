@@ -139,7 +139,7 @@ class SimpleClient:
         self.is_connected = False
 
     def log_data(self, timestamp, data, logconf):
-        logging.info('logging and sending data')
+        logging.info('Logging data, sending to Brain if modified')
         modified = False  # will be set to true if x, y or z is modified
         for v in logconf.variables:
             self.data[v.name]['time'].append(timestamp)
@@ -160,10 +160,10 @@ class SimpleClient:
             try:
                 response = requests.get(f'http://{BRAIN_IP}:{BRAIN_PORT}/drone_data', params=payload)
                 if response.status_code != 200:
-                    print(f'Error code sending request {response.status_code}')
+                    logging.warning(f'Error code sending drone_data to Brain {response.status_code}')
                 else:
-                    print(f'url: {response.url}')
-                    print(f'response: {response.content}')
+                    logging.info(f'Successfully sent drone_data: {drone_data}')
+                    logging.info(f'Brain response: {response.content}')
             except (requests.exceptions.RequestException, ConnectionError) as err:
                 logging.warning(f'Error sending request to Brain: {err}')
         else:
