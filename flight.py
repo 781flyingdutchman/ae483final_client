@@ -17,6 +17,7 @@ logging.basicConfig(level=logging.INFO)
 uri = 'radio://0/35/2M/E7E7E7E7E7'
 BRAIN_IP = ''  # TODO enter ip of brain
 BRAIN_PORT = '8080'
+CLIENT_PORT = '8080'
 DRONE_ID = '0'
 
 # Specify the variables we want to log (all at 100 Hz)
@@ -163,8 +164,11 @@ class SimpleClient:
                 else:
                     print(f'url: {response.url}')
                     print(f'response: {response.content}')
-            except requests.exceptions.RequestException as err:
+            except (requests.exceptions.RequestException, ConnectionError) as err:
                 logging.warning(f'Error sending request to Brain: {err}')
+        else:
+            # if no relevant data was modified
+            logging.debug('Log data did not contain data to send to Brain')
 
     def log_error(self, logconf, msg):
         logging.error(f'Error when logging {logconf}: {msg}')
@@ -276,5 +280,5 @@ if __name__ == '__main__':
         thread = threading.Thread(target=send_target_to_drone, args=(client,))
         thread.start()
 
-        logging.info('Starting web server')
-        app.run(host='0.0.0.0', port=8080, debug=True)
+        logging.info('Starting Client web server')
+        app.run(host='0.0.0.0', port=int(CLIENT_PORT), debug=True)
