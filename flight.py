@@ -137,29 +137,35 @@ class SimpleClient:
 
     def log_data(self, timestamp, data, logconf):
         logging.info('logging and sending data')
+        modified = False  # will be set to true if x, y or z is modified
         for v in logconf.variables:
             self.data[v.name]['time'].append(timestamp)
             self.data[v.name]['data'].append(data[v.name])
             if v.name == 'ae483log.o_x':
                 drone_data.x = data[v.name]
+                modified = True
             if v.name == 'ae483log.o_y':
                 drone_data.y = data[v.name]
+                modified = True
             if v.name == 'ae483log.o_z':
                 drone_data.z = data[v.name]
-        payload = drone_data.string_dict()
-        payload['drone_id'] = '0'  # TODO change drone id
-        try:
-            response = requests.get(f'http://{IP_OF_BRAIN}:8080/drone_data', params=payload)
-            if response.status_code != 200:
-                print(f'Error code sending request {response.status_code}')
-            else:
-                print(f'url: {response.url}')
-                print(f'response: {response.content}')
-        except requests.exceptions.RequestException:
-            logging.info('catch error while receiving')
+                modified = True
+        if modified:
+            # send to drone only if any of the drone x, y, z data has changed
+            payload = drone_data.string_dict()
+            payload['drone_id'] = '0'  # TODO change drone id
+            try:
+                response = requests.get(f'http://{IP_OF_BRAIN}:8080/drone_data', params=payload)
+                if response.status_code != 200:
+                    print(f'Error code sending request {response.status_code}')
+                else:
+                    print(f'url: {response.url}')
+                    print(f'response: {response.content}')
+            except requests.exceptions.RequestException:
+                logging.info('catch error while receiving')
 
     def log_error(self, logconf, msg):
-        print(f'Error when logging {logconf}: {msg}')
+        logging.error(f'Error when logging {logconf}: {msg}')
 
     def move(self, x, y, z, yaw, dt):
         print(f'Move to {x}, {y}, {z} with yaw {yaw} degrees for {dt} seconds')
@@ -258,9 +264,9 @@ if __name__ == '__main__':
         time.sleep(1.0)
     send_target_to_drone(client)
 
+    logging.info('Starting send_target_to_drone thread')
     thread = threading.Thread(target=send_target_to_drone, args=(client,))
     thread.start()
-    logging.info('threading')
 
+    logging.info('Starting web server')
     app.run(host='0.0.0.0', port=8080, debug=True)
-    logging.info('starting web server on port 8080')
