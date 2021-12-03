@@ -210,6 +210,8 @@ def send_target_to_drone(client):
     client.move(0, 0, 0.5, 0, 5)
     client.stop(5)
     client.disconnect()
+
+
 # Web server listening to brain
 app = Flask(__name__)
 logging.info('flask server initiated')
@@ -256,7 +258,7 @@ if __name__ == '__main__':
         time.sleep(1.0)
     send_target_to_drone(client)
 
-    thread = threading.Thread(target=send_target_to_drone, args=client)
+    thread = threading.Thread(target=send_target_to_drone, args=(client,))
     thread.start()
     logging.info('threading')
 
