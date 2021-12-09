@@ -30,7 +30,7 @@ def socket_listener(queue: Queue):
         s.bind(('0.0.0.0', int(CLIENT_PORT)))
         logging.info(f'Socket connected and listening')
         while True:
-            data = s.recvfrom(1024)
+            data = s.recvfrom(1024)[0]
             if not data:
                 logging.info('No data received')
                 break
@@ -38,7 +38,11 @@ def socket_listener(queue: Queue):
                 if len(data) == 3 * 4:
                     # struct contains 3 floats, representing target x, y and z
                     targets = struct.unpack('fff', data)  # convert the received data from bytes to float
+                    logging.debug(f'Received targets {targets} from Brain')
                     queue.put(targets)  # push into queue, read by main process
+                    if targets[2] < 0:
+                        # end if target_z < 0
+                        break
                 else:
                     logging.warning(f'Received only {len(data)} bytes: {data}')
     logging.info('Socket listener finished')
@@ -98,7 +102,8 @@ def main():
         logging.info('Starting separate brain communication process')
         process = Process(target=socket_listener, args=(q,))
         process.start()
-        process.join()  # waits until process ends
+
+        thread.join()  # waits until send_target_to_drone ends
         logging.info('Client is finished')
 
 
