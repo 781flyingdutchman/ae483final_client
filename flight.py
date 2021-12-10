@@ -7,15 +7,13 @@ from multiprocessing import Process, Queue
 from queue import Empty
 
 import cflib.crtp
-from flask import Flask
 
 from drone_client import BRAIN_IP, DRONE_ID, BRAIN_PORT, SimpleClient, CLIENT_PORT, uri, MockClient
 
 LOGLEVEL = logging.DEBUG
 TESTING = True  # change to FALSE if working with drones
 
-# end of constants
-app = Flask(__name__)  # Web server listening to brain
+
 
 
 def socket_listener(queue: Queue):

@@ -9,6 +9,8 @@ import numpy as np
 from cflib.crazyflie import Crazyflie
 from cflib.crazyflie.log import LogConfig
 
+import matplotlib.pyplot as plt
+
 # Specify the uri of the drone to which we want to connect (if your radio
 # channel is X, the uri should be 'radio://0/X/2M/E7E7E7E7E7')
 from drone_data import DroneData
@@ -225,7 +227,7 @@ class MockClient(SimpleClient):
         logging.info('Mock stop')
 
     def move(self, x, y, z, yaw, dt):
-        r = 0.3
+        r = 0.1
         drone_data.target_x = x
         drone_data.target_y = y
         drone_data.target_z = z
@@ -239,6 +241,11 @@ class MockClient(SimpleClient):
     def disconnect(self):
         logging.info('Mock disconnect')
         self.is_connected = False  # stops mock logging
+        x = self.data['ae483log.o_x']['data']
+        y = self.data['ae483log.o_y']['data']
+        # plt.scatter(x, y)
+        # plt.show()
+
 
 
 def simulate_log_update(client: MockClient):
@@ -246,7 +253,7 @@ def simulate_log_update(client: MockClient):
 
     print('Starting simulate log update')
     while client.is_connected:
-        time.sleep(1)
+        time.sleep(0.5)
         my_data = {'ae483log.o_x': drone_data.x,
                    'ae483log.o_y': drone_data.y,
                    'ae483log.o_z': drone_data.z}
