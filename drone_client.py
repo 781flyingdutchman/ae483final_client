@@ -140,7 +140,6 @@ class SimpleClient:
 
     def log_data(self, timestamp, data, logconf):
         logging.info('Logging data, sending to Brain if modified')
-        logging.debug(logconf.variables)
         modified = False  # will be set to true if x, y or z is modified
         for v in logconf.variables:
             self.data[v.name]['time'].append(timestamp)
@@ -156,7 +155,7 @@ class SimpleClient:
                 modified = True
         if modified:
             # send to drone only if any of the drone x, y, z data has changed
-            position = struct.pack('hfff', DRONE_ID, drone_data.x, drone_data.y, drone_data.z)
+            position = struct.pack('ifff', DRONE_ID, drone_data.x, drone_data.y, drone_data.z)
             b = self.socket.sendto(position, (BRAIN_IP, int(BRAIN_PORT)))
             logging.info(
                 f'Successfully sent {b} bytes drone id+position: {(DRONE_ID, drone_data.x, drone_data.y, drone_data.z)}')
@@ -235,7 +234,7 @@ class MockClient(SimpleClient):
         drone_data.z = (drone_data.target_z - drone_data.z) * r + drone_data.z
         logging.info(f'Mock move target {drone_data.target_x, drone_data.target_y, drone_data.target_z}')
         logging.info(f'Mock move to {drone_data.x, drone_data.y, drone_data.z}')
-        time.sleep(1.0)
+        time.sleep(0.1)
 
     def disconnect(self):
         logging.info('Mock disconnect')
